@@ -9,6 +9,7 @@ from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 
 from data_preprocessing import load_data, clean_data, split_features
+from evaluate import evaluate_model
 
 df=load_data("WA_Fn-UseC_-Telco-Customer-Churn.csv")    
 df=clean_data(df)
@@ -56,3 +57,7 @@ for name, model in models.items():
     print("Best Params:\n", grid.best_params_)
     print("F1 Score:\n", f1)
     print("ROC AUC Score:\n", roc)
+    
+    metrics = evaluate_model(y_test, y_preds)
+    print("Confusion Matrix:\n", metrics["confusion_matrix"])
+    print("Classification Report:\n", metrics["classification_report"])
