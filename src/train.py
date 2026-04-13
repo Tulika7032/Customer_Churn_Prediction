@@ -11,47 +11,60 @@ from sklearn.linear_model import LogisticRegression
 from data_preprocessing import load_data, clean_data, split_features
 from evaluate import evaluate_model
 
-df=load_data("WA_Fn-UseC_-Telco-Customer-Churn.csv")    
-df=clean_data(df)
+df = load_data("WA_Fn-UseC_-Telco-Customer-Churn.csv")    
+df = clean_data(df)
 
-X,y=split_features(df)
+X, y = split_features(df)
 
-X_train, X_test, y_train, y_test=train_test_split(X,y, random_state=42, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state=42, test_size=0.2
+)
 
-scale=StandardScaler()
-X_train=scale.fit_transform(X_train)
-X_test=scale.transform(X_test)
+scale = StandardScaler()
+X_train = scale.fit_transform(X_train)
+X_test = scale.transform(X_test)
 
-models={
+models = {
     "Random Forest Classifier": {
         "model": RandomForestClassifier(), 
-        "params":{"n_estimators":[100,200], "max_depth":[10,20]}
+        "params": {"n_estimators": [100, 200], "max_depth": [10, 20]}
     },
     "SVC": {
         "model": SVC(probability=True),
-        "params":{"C":[0.1,1], "kernel":["linear", "rbf"]}
+        "params": {"C": [0.1, 1], "kernel": ["linear", "rbf"]}
     },
     "Logistic Regression": {
         "model": LogisticRegression(), 
-        "params":{"C":[0.1,1,10]}
+        "params": {"C": [0.1, 1, 10]}
     }
 }
 
-results=[]
+results = []
+best_models = {} 
 
 for name, model in models.items():
-    print("-"*50)
+    print("-" * 50)
     print(f"Training {name}")
-    print("-"*50)
-    grid=GridSearchCV(cv=5, scoring="f1", estimator=models[name]["model"], param_grid=models[name]["params"])
+    print("-" * 50)
+
+    grid = GridSearchCV(
+        cv=5,
+        scoring="f1",
+        estimator=models[name]["model"],
+        param_grid=models[name]["params"]
+    )
+
     grid.fit(X_train, y_train)
 
-    best_model=grid.best_estimator_
-    y_preds=best_model.predict(X_test)
-    y_probs=best_model.predict_proba(X_test)[:,1]
+    best_model = grid.best_estimator_
+    best_models[name] = best_model 
 
-    f1=f1_score(y_test,y_preds)
-    roc=roc_auc_score(y_test, y_probs)
+    y_preds = best_model.predict(X_test)
+    y_probs = best_model.predict_proba(X_test)[:, 1]
+
+    f1 = f1_score(y_test, y_preds)
+    roc = roc_auc_score(y_test, y_probs)
+
     results.append((f1, roc, name))
 
     print("Best Params:\n", grid.best_params_)
@@ -61,3 +74,10 @@ for name, model in models.items():
     metrics = evaluate_model(y_test, y_preds)
     print("Confusion Matrix:\n", metrics["confusion_matrix"])
     print("Classification Report:\n", metrics["classification_report"])
+
+best_model_name = max(results, key=lambda x: x[0])[2]
+final_model = best_models[best_model_name]
+
+print("\n" + "=" * 50)
+print(" ⭐ Best Model Selected:", best_model_name)
+print("=" * 50)
